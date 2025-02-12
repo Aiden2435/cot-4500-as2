@@ -1,83 +1,123 @@
-def neville(x_values, f_values, x):
-    n = len(x_values)
-    # Create a table for storing intermediate results
-    P = [[0 for _ in range(n)] for _ in range(n)]
+import numpy as np
+np.set_printoptions(precision=7, suppress=True, linewidth=100)
 
-    # Initialize the diagonal with f(x_i) values
-    for i in range(n):
-        P[i][i] = f_values[i]
+#Question 1
+def nevilles_method(x_points, y_points,x):
+    x_points=[3.6,3.8,3.9]
+    y_points=[1.675,1.436,1.318]
+    matrix = np.zeros((3,3))
 
-    # Apply Neville's formula to calculate the interpolation values
-    for j in range(1, n):
-        for i in range(n - j):
-            P[i][i + j] = ((x - x_values[i]) * P[i + 1][i + j] - (x - x_values[i + j]) * P[i][i + j - 1]) / (x_values[i + j] - x_values[i])
+    for counter, row in enumerate(matrix):
+        row[0] = y_points[counter]
+    num_of_points = len(x_points)
+    for i in range(1, num_of_points):
+        for j in range(1, i+1):
+            multi1 = (x - x_points[i-j]) * matrix[i][j-1]
+            multi2 = (x - x_points[i]) * matrix[i-1][j-1]
+            denominator = x_points[i] - x_points[i-j]
 
-    # The final result is stored in P[0][n-1]
-    return P[0][n - 1]
-
-# Given data points
-x_values = [3.6, 3.8, 3.9]
-f_values = [1.675, 1.436, 1.318]
-
-# Desired x value
-x = 3.7
-
-# Find the interpolated value using Neville's method
-result = neville(x_values, f_values, x)
-
-# Print the result
-print(f"f({x}) = {result}")
-
-
-import math
-
-# Given data
-x_values = [7.2, 7.4, 7.5, 7.6]
-f_values = [23.5492, 25.3913, 26.8224, 27.4589]
-
-# Function to compute the forward divided differences table
-def compute_divided_differences(x_vals, f_vals):
-    n = len(x_vals)
-    table = [[0] * n for _ in range(n)]
+            coefficient = (multi1-multi2)/denominator
+            matrix[i][j] = coefficient
     
-    # Initialize the first column with f(x) values
-    for i in range(n):
-        table[i][0] = f_vals[i]
+    print(matrix[num_of_points-1][num_of_points-1])
+if __name__ == "__main__":
+
+    x_points = []
+    y_points = []
+#Question 2
+    approximating_value = 3.7
+    nevilles_method(x_points, y_points, approximating_value)
+#Question 3
+def divided_difference_table(x_points, y_points):
+    size: int = len(x_points)
+    matrix: np.array = np.zeros((size, size), dtype=object)
     
-    # Fill in the divided difference table
-    for j in range(1, n):
-        for i in range(n - j):
-            table[i][j] = (table[i + 1][j - 1] - table[i][j - 1]) / (x_vals[i + j] - x_vals[i])
+    for index, row in enumerate(matrix):
+        row[0] = (y_points[index])
     
-    return table
 
-# Function to calculate the Newton's Forward Polynomial approximation
-def newtons_forward_polynomial(x, x_vals, table, degree):
-    n = len(x_vals)
-    result = table[0][0]
-    term = 1  # Initialize the first term as 1 (x - x0)^0
+    for i in range(1, size):
+        for j in range(1, i+1):
+            numerator = matrix[i][j-1] - matrix[i-1][j-1]
+            denominator = (x_points[i]) - (x_points[i-j])
+            operation = numerator / denominator
+          
+            matrix[i][j] = operation
+    list=[matrix[1][1],matrix[2][2],matrix[3][3]]
+    print(list)        
+    return matrix
+   
+def get_approximate_result(matrix, x_points, value):
+    reoccuring_x_span = 1
+    reoccuring_px_result = matrix[0][0]
     
-    for j in range(1, degree + 1):
-        term *= (x - x_vals[j - 1])  # (x - x0)(x - x1)(x - x2)...
-        result += term * table[0][j]
+    for index in range(1, len(matrix)):
+        polynomial_coefficient = matrix[index][index]
+        reoccuring_x_span *= ((value - x_points[index-1]))
+        
+        mult_operation = polynomial_coefficient * reoccuring_x_span
+        reoccuring_px_result += mult_operation
+    return reoccuring_px_result
+if __name__ == "__main__":
+    x_points = [7.2, 7.4, 7.5, 7.6]
+    y_points = [23.5492, 25.3913, 26.8224, 27.4589]
+    divided_table = divided_difference_table(x_points, y_points)
+    approximating_x = 7.3
+    final_approximation = get_approximate_result(divided_table, x_points, approximating_x)
+    print("%.15f" % final_approximation, "\n")
+
+
+#Question 4
+def apply_div_dif(matrix: np.array):
+    size = len(matrix)
+    for i in range(2, size):
+        for j in range(2, i+2):
+           
+            if j >= len(matrix[i]) or matrix[i][j] != 0:
+                continue
+            
+            left: float =  matrix[i][j-1]
+            diagonal_left: float = matrix[i-1][j-1]
+            numerator: float = left - diagonal_left
+            denominator = matrix[i][0] - matrix[i-(j-1)][0]
+            operation = numerator / denominator
+            matrix[i][j] = operation
     
-    return result
-
-# Compute divided differences table
-table = compute_divided_differences(x_values, f_values)
-
-# Print the divided difference table
-print("Divided Difference Table:")
-for row in table:
-    print(row)
-
-# Degrees for approximations
-degrees = [1, 2, 3]
-
-# Calculate and print the polynomial approximations for degrees 1, 2, and 3 at a sample x = 7.5
-x_sample = 7.5
-
-for degree in degrees:
-    approx_value = newtons_forward_polynomial(x_sample, x_values, table, degree)
-    print(f"\nNewton's Forward Polynomial approximation for degree {degree} at x = {x_sample}: {approx_value}")
-
+    return matrix
+if __name__ == "__main__":    
+    x_points = [3.6, 3.8, 3.9]
+    y_points = [1.675, 1.436, 1.318]
+    slopes = [-1.195, -1.188, -1.182]
+    num_of_points = len(x_points)
+    matrix = np.zeros((2*num_of_points, 2*num_of_points))
+    for x in range(num_of_points):
+        matrix[2*x][0] = x_points[x]
+        matrix[2*x+1][0] = x_points[x]
+    
+    for x in range(num_of_points):
+        matrix[2*x][1] = y_points[x]
+        matrix[2*x+1][1] = y_points[x]
+    for x in range(num_of_points):
+        matrix[2*x+1][2] = slopes[x]
+    filled_matrix = apply_div_dif(matrix)
+    print(filled_matrix)
+    
+#Question 5
+x = np.array([2, 5, 8, 10])
+y  = np.array([3, 5, 7, 9])
+n = len(x)-1
+A = np.zeros((n+1, n+1))
+A[0, 0] = 1
+A[n, n] = 1
+for i in range(1, n):
+    A[i, i-1] = x[i] -x[i-1]
+    A[i, i] = 2 * (x[i+1] - x[i-1])
+    A[i, i+1] = x[i+1] - x[i]
+b = np.zeros(n+1)
+for i in range(1, n):
+    b[i] = 3 * (y[i+1] - y[i]) / (x[i+1] - x[i]) - \
+           3 * (y[i] - y[i-1]) / (x[i] - x[i-1])
+x = np.linalg.solve(A, b)
+print(A, "\n")
+print(b, "\n")
+print(x, "\n")
